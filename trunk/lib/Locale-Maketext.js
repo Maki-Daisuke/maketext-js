@@ -4,9 +4,8 @@ var Locale;  if ( !(Locale instanceof Object) ) Locale = {};
     var TIMEOUT = 20000;  // time to wait for loading script (msec)
     
     
-    Locale.Maketext = function ( base, default_lang ) {
+    Locale.Maketext = function ( base ) {
         this._base_url     = base || "";
-        this._default_lang = default_lang;
         this._lexicons     = {};
         this._callbacks    = {};
     };
@@ -118,25 +117,23 @@ var Locale;  if ( !(Locale instanceof Object) ) Locale = {};
     };
     
     proto._resolution_order =function ( lang ) {
-        lang = String(lang).match(/(\w+(?:-\w+)*)/g) || [];
-        var resolved = [];
-        for ( var i=0;  i < lang.length;  i++ ) {
-            var tmp = String(lang[i]).split(/-/);
+        var resolved = String(lang).match(/(\w+(?:-\w+)*)/g) || [];
+        var superordinate = [];
+        for ( var i=0;  i < resolved.length;  i++ ) {
+            var tmp = String(resolved[i]).split(/-/);
+            tmp.pop();
             while ( tmp.length ) {
-                resolved.push(tmp.join("-"));
+                superordinate.push(tmp.join("-"));
                 tmp.pop();
             }
         }
-        var default_lang = this._default_lang;
-        if ( !default_lang ) {
-            if ( !resolved.length ) throw new Error("empty language specification: " + Array.prototype.join.call(arguments, ","));
-            return resolved;
-        }
-        for ( var i=0;  i < resolved.length;  i++ ) {
-            if ( resolved[i] == default_lang ) return lang;
-        }
-        resolved.push(default_lang);
+        resolved = resolved.concat(superordinate, this.fallback_languages());
+        if ( !resolved.length ) throw new Error("empty language specification: " + lang);
         return resolved;
+    };
+    
+    proto.fallback_languages = function ( ) {
+        return ['i-default', 'en', 'en-US'];
     };
     
     
