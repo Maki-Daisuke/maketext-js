@@ -4,10 +4,17 @@ var Locale;  if ( !(Locale instanceof Object) ) Locale = {};
     var TIMEOUT = 20000;  // time to wait for loading script (msec)
     
     
-    Locale.Maketext = function ( base ) {
-        this._base_url     = base || "";
-        this._lexicons     = {};
-        this._callbacks    = {};
+    Locale.Maketext = function ( opts ) {
+        if ( !opts ) opts = {};
+        var langs = opts.languages;
+        if ( !(langs instanceof Array) || langs.length == 0 ) {
+            throw new Error("languages must not be empty");
+        }
+        this._languages = {};
+        for ( var i=0;  i < langs.length;  i++ ) this._languages[langs[i]] = true;
+        this._base_url  = opts.base_url || "";
+        this._lexicons  = {};
+        this._callbacks = {};
     };
     
     var proto = Locale.Maketext.prototype;
@@ -96,40 +103,46 @@ var Locale;  if ( !(Locale instanceof Object) ) Locale = {};
         var lang = opts.lang || navigator.language;
         var onSuccess = opts.onSuccess;
         var onError   = opts.onError;
-        lang = this._resolution_order(lang);
-        var i = 0;
+        lang = this._resolve_lang(lang);
         var self = this;
         function success ( ) {
-            onSuccess( new Locale.Maketext.Handle(self._lexicons[lang[i]]) );
+            onSuccess( new Locale.Maketext.Handle(self._lexicons[lang]) );
         }
         function error ( ) {
-            if ( ++i < lang.length ) {
-                self._load(lang[i], success, error);
+            if ( typeof onError == "function" ) {
+                onError();
             } else {
-                if ( typeof onError == "function" ) {
-                    onError();
-                } else {
-                    throw new Error("Can't load lexicon file for any of the followings: " + lang.join(","));
-                }
+                throw new Error("Can't load lexicon file for `" + lang + "'");
             }
         }
-        this._load(lang[i], success, error);
+        this._load(lang, success, error);
     };
     
-    proto._resolution_order =function ( lang ) {
-        var resolved = String(lang).match(/(\w+(?:-\w+)*)/g) || [];
-        var superordinate = [];
-        for ( var i=0;  i < resolved.length;  i++ ) {
-            var tmp = String(resolved[i]).split(/-/);
+    proto._resolve_lang =function ( lang ) {
+        var langs = String(lang).match(/(\w+(?:-\w+)*)/g) || [];
+        for ( var i=0;  i < langs.length;  i++ ) {
+            if ( this._languages.hasOwnProperty(langs[i]) ) {
+                return langs[i];
+            }
+        }
+        for ( var i=0;  i < langs.length;  i++ ) {
+            var tmp = String(langs[i]).split(/-/);
             tmp.pop();
             while ( tmp.length ) {
-                superordinate.push(tmp.join("-"));
+                var superordinate = tmp.join("-");
+                if ( this._languages.hasOwnProperty(superordinate) ) {
+                    return superordinate;
+                }
                 tmp.pop();
             }
         }
-        resolved = resolved.concat(superordinate, this.fallback_languages());
-        if ( !resolved.length ) throw new Error("empty language specification: " + lang);
-        return resolved;
+        langs = this.fallback_languages();
+        for ( var i=0;  i < langs.length;  i++ ) {
+            if ( this._languages.hasOwnProperty(langs[i]) ) {
+                return langs[i];
+            }
+        }
+        throw new Error("No language to load was found for `" + lang + "'");
     };
     
     proto.fallback_languages = function ( ) {
