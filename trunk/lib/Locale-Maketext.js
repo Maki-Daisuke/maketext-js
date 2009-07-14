@@ -98,14 +98,14 @@ var Locale;  if ( !(Locale instanceof Object) ) Locale = {};
         var onSuccess = opts.onSuccess;
         var onError   = opts.onError;
         lang = this._resolution_order(lang);
+        var i = 0;
         var self = this;
         function success ( ) {
-            onSuccess( new Locale.Maketext.Handle(self._lexicons[lang]) );
+            onSuccess( new Locale.Maketext.Handle(self._lexicons[lang[i]]) );
         }
-        var i = 0;
         function error ( ) {
             if ( ++i < lang.length ) {
-                self._load(lang[i], onSuccess, onError);
+                self._load(lang[i], success, error);
             } else {
                 if ( typeof onError == "function" ) {
                     onError();
