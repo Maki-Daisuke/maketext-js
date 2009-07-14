@@ -100,7 +100,7 @@ var Locale;  if ( !(Locale instanceof Object) ) Locale = {};
     
     proto.getHandle = function ( opts ) {
         opts = opts || {};
-        var lang = opts.lang || navigator.language;
+        var lang = opts.lang || navigator.language || navigator.browserLanguage;
         var onSuccess = opts.onSuccess;
         var onError   = opts.onError;
         lang = this._resolve_lang(lang);
@@ -167,7 +167,7 @@ var Locale;  if ( !(Locale instanceof Object) ) Locale = {};
     // Compiler for bracket notation
     function compile ( str ) {
         var ctx = (new Parser(str)).parse();
-        return eval("(function(){ return " + ctx.val.compile() + "; })");
+        return eval("0, function(){ return " + ctx.val.compile() + "; }");
     }
     
     function unescape ( s ) {
